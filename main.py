@@ -18,6 +18,9 @@ from cryptography.hazmat.primitives.asymmetric import padding
 from cryptography.hazmat.primitives import serialization
 
 fm_token = os.environ.get("fm_token") or ""
+# 以下两个参数抓一次后续无需更新
+fm_pto = os.environ.get("fm_pto") or ""
+fm_par = os.environ.get("fm_par") or ""
 PUSHPLUS_TOKEN = os.environ.get("PUSHPLUS_TOKEN") or ""
 
 if fm_token is None:
@@ -35,11 +38,11 @@ class Utils:
         self.ak = self.genak()
         self.ed = self.re(self.ak, self.pfile)
         # self.pto = self.re(self.ak, self.p)
-        # self.dataa = '{"device_key":"6fa06973282914aaa68e3eb92fbaaf76"}'
+        # self.dataa = '{"device_key":"261ff2afcf5843bcd9ac94e46338de181"}'
         # self.par = self.secret(self.dataa, self.ak)
         # pto和par写死即可，并不校验
-        self.pto = 'FNlRTiHvYPMyXIAtIxL+cXJ1Hk/UFe1RQv0+lRw9FE9RqTSaYbyj0ICUYWBAAowU5AIvTmfrVmXLCHoJ0jW9HI3Q1ndWBgt/wJ6DCvb04HxyffgcEHyGOoDg2lStHsBEYFC/4A9V3fFb5IcWDMTZD5Dad8I6PmAMGqcwi5SRzvTyLVVfpU7IAqyASFXd2D2YDlPCz1hBRoIIVEclBodwtbnp0h2Gnce3SkO3wQh5FQIBaZtyuUAYUUMgxC5MLvE6yXaYHyqul8ItIsMJwxQqK8DQmfhwL/8sd9KOlGTnsv4SAACq2bSH+49G4NwT1SE6+A4tOwX11hVEQs2egZclaQ=='
-        self.par = 'tYfl75lXvD8Gv8s1nIZcIjokTZ53HK8xwDDMnSkhac7fDgtTadiIWS+afVnP/LujciT5+iLC1AqOpcxOmQuk2A=='
+        self.pto = fm_pto
+        self.par = fm_par
 
     # 读取文件
     def read_file(self, file_name):
@@ -117,11 +120,11 @@ class Utils:
 
         if operation:  # 解密
             cipher = AES.new(key, AES.MODE_CBC, iv=iv)
-            decrypted = unpad(cipher.decrypt(b64decode(string)), AES.block_size, style='pkcs7')
+            decrypted = unpad(cipher.decrypt(b64decode(string)), AES.block_size)
             return decrypted.decode('utf-8')
         else:  # 加密
             cipher = AES.new(key, AES.MODE_CBC, iv=iv)
-            encrypted = cipher.encrypt(pad(string.encode(), AES.block_size, style='pkcs7'))
+            encrypted = cipher.encrypt(pad(string.encode(), AES.block_size))
             return base64.b64encode(encrypted).decode('utf-8')
 
     # 数据解密
@@ -216,8 +219,16 @@ class Function:
             "fmver": server_version,
         })
 
+    # 获取用户信息
+    def get_user_info(self):
+        userInfoRes = self.request.post("https://fmpapi.feimaoyun.com/user-service/user/info", {})
+        # userInfo = userInfoRes['data']
+        userId = userInfoRes['user_id']
+        print(f"【获取用户信息】用户ID：{userId}")
+        return userId
+
     # 获取视频奖励
-    def reward_video(self, aid):
+    def reward_video(self, aid, user_id):
         url = 'https://api-access.pangolin-sdk-toutiao.com/api/ad/union/mediation/reward_video/reward/'
         headers = {
             "Host": "api-access.pangolin-sdk-toutiao.com",
@@ -236,7 +247,7 @@ class Function:
             "network": 1,
             "play_start_ts": timeMs - 20000,
             "play_end_ts": timeMs,
-            "user_id": "7890985",
+            "user_id": user_id,
             "trans_id": f"{transId}",
             "link_id": f"{linkId}",
             "prime_rit": "102375589",
@@ -255,12 +266,13 @@ class Function:
 
     # 看广告
     def watch_ad(self):
+        user_id = self.get_user_info()
         while True:
             abTaskInfoRes = self.request.post("https://fmpapi.feimaoyun.com/user-service/welfare/abTaskInfo", {})
             if 'aid' in abTaskInfoRes:
                 print(f'【请求广告返回】剩余广告次数：{abTaskInfoRes["count"]}，获得福利点：{abTaskInfoRes["ad_point"]}点')
                 adAid = abTaskInfoRes['aid']
-                self.reward_video(adAid)
+                self.reward_video(adAid, user_id)
             else:
                 print(f'【请求广告返回】{abTaskInfoRes["msg"]}')
                 break

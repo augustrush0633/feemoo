@@ -33,8 +33,10 @@ pip install -r requirements.txt
 
 填写参数
 
-进入项目根目录下，修改main.py文件，填写以下参数
+进入项目根目录下，修改main.py文件，填写以下参数(pto和par抓一次后续无需更新)
 - fm_token： 飞猫盘APP内登录账号后抓包fmpapi.feimaoyun.com域名下的任意请求中token，无root可以尝试[模拟器抓包](https://www.bilibili.com/video/BV1qS411N7Kv/)
+- fm_pto： 同上请求中的pto
+- fm_pto： 同上请求中的par
 - PUSHPLUS_TOKEN（可选）： pushplus的token，可以在[官网](https://www.pushplus.plus/)个人中心获取
 
 如图所示
